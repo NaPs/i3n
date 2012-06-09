@@ -37,7 +37,7 @@ Usage
 Configure i3bar to use i3nbar as status command, for example::
 
     bar {
-        status_command ~/Devel/i3n/i3n-bar {{ OUTPUT }}
+        status_command i3n-bar {{ OUTPUT }}
     }
 
 {{ OUTPUT }} is the name of your screen as shown in xrandr output.
@@ -47,12 +47,12 @@ If you use a multi-monitor setup, configure a bar for each output::
 
     bar {
         OUTPUT DVI-I-1
-        status_command ~/Devel/i3n/i3n-bar DVI-I-1
+        status_command i3n-bar DVI-I-1
     }
 
     bar {
         OUTPUT DVI-I-2
-        status_command ~/Devel/i3n/i3n-bar DVI-I-2 --slave
+        status_command i3n-bar DVI-I-2 --slave
     }
 
 
