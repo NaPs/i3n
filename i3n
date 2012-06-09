@@ -1,0 +1,69 @@
+#!/usr/bin/env python
+
+""" i3n cli.
+"""
+
+
+import argparse
+import getpass
+
+import i3
+import zmq
+
+
+def daemonconn(func):
+    """ Decorator used to connect to the daemon IPC.
+    """
+    def wrapper(args):
+        context = zmq.Context()
+        socket = context.socket(zmq.PUB)
+        socket.connect('ipc://%s' % args.ipc)
+        return func(socket, args)
+    return wrapper
+
+
+def get_current_workspace():
+    """ Get the current focused workspace.
+    """
+    workspaces = [w for w in i3.get_workspaces() if w['focused']]
+    assert len(workspaces), 'Only one workspace should be focused at time'
+    return workspaces[0]['name']
+
+
+@daemonconn
+def annotate(socket, args):
+    """ Annotate a workspace.
+    """
+    msg = {'type': 'set', 'workspace': args.workspace,
+           'annotation': args.annotation}
+    socket.send_json(msg)
+
+
+def switch_urgent(args):
+    """ Switch to the next urgent windows, and go back.
+    """
+    urgent = i3.filter(urgent=True, type=2)
+
+    if urgent:
+        i3.mark('_urgent_wayback')
+        i3.focus(con_id=urgent[0]['id'])
+    else:
+        i3.focus(con_mark='_urgent_wayback')
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    subs = parser.add_subparsers()
+
+    p_annotate = subs.add_parser('annotate')
+    p_annotate.add_argument('annotation')
+    p_annotate.add_argument('-w', '--workspace', default=get_current_workspace(),
+                            help='the workspace to annotate (default current)')
+    p_annotate.add_argument('--ipc', default='/tmp/i3n-%s' % getpass.getuser())
+    p_annotate.set_defaults(entrypoint=annotate)
+
+    p_switch_urgent = subs.add_parser('switch-urgent')
+    p_switch_urgent.set_defaults(entrypoint=switch_urgent)
+
+    args = parser.parse_args()
+    args.entrypoint(args)
+
